@@ -11,3 +11,7 @@ run-web:
 .PHONY: run-bot
 run-bot:
 	cd aps/bot && go run ./cmd/main.go
+
+.PHONY: up
+up:
+	docker compose up -d

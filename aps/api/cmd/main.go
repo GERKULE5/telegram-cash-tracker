@@ -1,28 +1,40 @@
 package main
 
 import (
+	"api/internal/config"
 	"api/internal/health"
+	"api/internal/postgres"
+	"context"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/joho/godotenv"
 )
 
 func main() {
 
-	envFile := os.Getenv("ENV_FILE")
-
-	if envFile != "" {
-		if err := godotenv.Load(envFile); err != nil {
-			log.Fatalf("failed load env %v", err)
-		}
+	config, err := config.Load()
+	if err != nil {
+		log.Fatalf("load config: %v", err)
 	}
 
-	port := os.Getenv("API_PORT")
+	dsn := fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		config.PostgresHost,
+		config.PostgresPort,
+		config.PostgresUsername,
+		config.PostgresPassword,
+		config.PostgresDB,
+	)
+
+	db, err := postgres.New(context.Background(), dsn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	log.Println("postgres connected")
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -30,6 +42,6 @@ func main() {
 
 	r.Get("/ping", health.Ping)
 
-	fmt.Printf("Server is working on %s\n", port)
-	http.ListenAndServe(":"+port, r)
+	fmt.Printf("server is working on %s\n", config.Port)
+	http.ListenAndServe(":"+config.Port, r)
 }
