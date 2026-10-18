@@ -1,7 +1,7 @@
 package health
 
 import (
-	"encoding/json"
+	"api/internal/httpx"
 	"net/http"
 	"time"
 )
@@ -12,9 +12,7 @@ type Response struct {
 }
 
 func Ping(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(Response{
+	httpx.WriteJSON(w, http.StatusOK, Response{
 		Status: "OK",
 		Time:   time.Now(),
 	})

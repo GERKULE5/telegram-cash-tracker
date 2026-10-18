@@ -18,6 +18,7 @@ func New(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 	}
 
 	if err := pool.Ping(ctx); err != nil {
+		pool.Close()
 		return nil, fmt.Errorf("ping postgres: %w", err)
 	}
 

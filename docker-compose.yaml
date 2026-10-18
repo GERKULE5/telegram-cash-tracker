@@ -15,3 +15,23 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  migrate:
+    image: migrate/migrate:v4.19.0
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGUSER: ${POSTGRES_USERNAME:-postgres}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      PGDATABASE: ${POSTGRES_DB:-postgres}
+    volumes:
+      - ./aps/api/migrations:/migrations:ro
+    entrypoint:
+      - migrate
+      - -path
+      - /migrations
+      - -database
+      - "postgres://postgres:5432/?sslmode=disable"
+    command: ["up"]

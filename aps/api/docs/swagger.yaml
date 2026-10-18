@@ -1,0 +1,544 @@
+basePath: /
+definitions:
+  httpx.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  spending.Category:
+    enum:
+    - food
+    - transport
+    - housing
+    - entertainment
+    - health
+    - purchases
+    - other
+    type: string
+    x-enum-varnames:
+    - CategoryFood
+    - CategoryTransport
+    - CategoryHousing
+    - CategoryEntertainment
+    - CategoryHealth
+    - CategoryPurchases
+    - CategoryOther
+  spending.CreateParams:
+    properties:
+      amount:
+        example: 35000
+        minimum: 1
+        type: integer
+      category:
+        allOf:
+        - $ref: '#/definitions/spending.Category'
+        enum:
+        - food
+        - transport
+        - housing
+        - entertainment
+        - health
+        - purchases
+        - other
+      comment:
+        example: Coffee
+        type: string
+      spent_at:
+        example: "2026-10-17T12:00:00+07:00"
+        type: string
+      user_id:
+        example: 1
+        minimum: 1
+        type: integer
+    required:
+    - amount
+    - category
+    - spent_at
+    - user_id
+    type: object
+  spending.Spending:
+    properties:
+      amount:
+        type: integer
+      category:
+        $ref: '#/definitions/spending.Category'
+      comment:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      spent_at:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  spending.UpdateParams:
+    properties:
+      amount:
+        example: 45000
+        minimum: 1
+        type: integer
+      category:
+        allOf:
+        - $ref: '#/definitions/spending.Category'
+        enum:
+        - food
+        - transport
+        - housing
+        - entertainment
+        - health
+        - purchases
+        - other
+      comment:
+        example: Coffee
+        type: string
+      spent_at:
+        example: "2026-10-17T12:00:00+07:00"
+        type: string
+    required:
+    - spent_at
+    type: object
+  user.CreateUserParams:
+    properties:
+      name:
+        example: Ivan
+        maxLength: 128
+        type: string
+      telegram_user_id:
+        example: 123456789
+        minimum: 1
+        type: integer
+      username:
+        example: ivan
+        maxLength: 64
+        type: string
+    required:
+    - telegram_user_id
+    type: object
+  user.User:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      telegram_user_id:
+        type: integer
+      username:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: API for tracking family expenses.
+  title: Telegram Cash Tracker API
+  version: "1.0"
+paths:
+  /admin/spendings:
+    get:
+      description: Sorted by created_at DESC, id DESC. from is inclusive; to is exclusive.
+      parameters:
+      - description: Internal user ID filter
+        in: query
+        minimum: 1
+        name: user_id
+        type: integer
+      - description: Category
+        enum:
+        - food
+        - transport
+        - housing
+        - entertainment
+        - health
+        - purchases
+        - other
+        in: query
+        name: category
+        type: string
+      - description: Period start (RFC3339)
+        in: query
+        name: from
+        type: string
+      - description: Period end (RFC3339, exclusive)
+        in: query
+        name: to
+        type: string
+      - default: 20
+        description: Page size
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      - default: 0
+        description: Records to skip
+        in: query
+        minimum: 0
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/spending.Spending'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+      summary: List all family spendings
+      tags:
+      - Admin Spendings
+    post:
+      consumes:
+      - application/json
+      description: user_id in the body is the internal users.id. Amount is in kopecks.
+      parameters:
+      - description: Spending data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/spending.CreateParams'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/spending.Spending'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+      summary: Create spending for any user
+      tags:
+      - Admin Spendings
+  /admin/spendings/{id}:
+    delete:
+      parameters:
+      - description: Spending ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Spending deleted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+      summary: Delete any spending
+      tags:
+      - Admin Spendings
+    get:
+      parameters:
+      - description: Spending ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/spending.Spending'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+      summary: Get spending
+      tags:
+      - Admin Spendings
+    patch:
+      consumes:
+      - application/json
+      description: Omitted or null fields remain unchanged. Use an empty string to
+        clear the comment.
+      parameters:
+      - description: Spending ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      - description: Fields to update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/spending.UpdateParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/spending.Spending'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+      summary: Update any spending
+      tags:
+      - Admin Spendings
+  /spendings:
+    get:
+      description: Sorted by created_at DESC, id DESC. from is inclusive; to is exclusive.
+      parameters:
+      - description: Internal user ID
+        in: query
+        minimum: 1
+        name: user_id
+        required: true
+        type: integer
+      - description: Category
+        enum:
+        - food
+        - transport
+        - housing
+        - entertainment
+        - health
+        - purchases
+        - other
+        in: query
+        name: category
+        type: string
+      - description: Period start (RFC3339)
+        in: query
+        name: from
+        type: string
+      - description: Period end (RFC3339, exclusive)
+        in: query
+        name: to
+        type: string
+      - default: 20
+        description: Page size
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      - default: 0
+        description: Records to skip
+        in: query
+        minimum: 0
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/spending.Spending'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+      summary: List spendings
+      tags:
+      - Spendings
+    post:
+      consumes:
+      - application/json
+      description: User_id is the internal users.id.
+      parameters:
+      - description: Spending data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/spending.CreateParams'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/spending.Spending'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+      summary: Create spending
+      tags:
+      - Spendings
+  /spendings/{id}:
+    delete:
+      parameters:
+      - description: Spending ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      - description: Internal owner ID
+        in: query
+        minimum: 1
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Spending deleted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+      summary: Delete spending
+      tags:
+      - Spendings
+    patch:
+      consumes:
+      - application/json
+      description: Omitted or null fields remain unchanged. Use an empty string to
+        clear the comment. user_id is the internal users.id.
+      parameters:
+      - description: Spending ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      - description: Internal owner ID
+        in: query
+        minimum: 1
+        name: user_id
+        required: true
+        type: integer
+      - description: Fields to update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/spending.UpdateParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/spending.Spending'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+      summary: Update spending
+      tags:
+      - Spendings
+  /users:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные для создания пользователя
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.CreateUserParams'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/user.User'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+        "409":
+          description: Telegram user already exists
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httpx.ErrorResponse'
+      summary: Create user
+      tags:
+      - Users
+swagger: "2.0"
