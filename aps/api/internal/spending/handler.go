@@ -15,12 +15,12 @@ import (
 type Repository interface {
 	Create(context.Context, CreateParams) (Spending, error)
 	List(context.Context, ListParams) ([]Spending, error)
-	Update(context.Context, int, int, UpdateParams) (Spending, error)
-	Delete(context.Context, int, int) error
+	Update(context.Context, int32, int32, UpdateParams) (Spending, error)
+	Delete(context.Context, int32, int32) error
 	ListAll(context.Context, ListParams) ([]Spending, error)
-	GetByID(context.Context, int) (Spending, error)
-	UpdateByID(context.Context, int, UpdateParams) (Spending, error)
-	DeleteByID(context.Context, int) error
+	GetByID(context.Context, int32) (Spending, error)
+	UpdateByID(context.Context, int32, UpdateParams) (Spending, error)
+	DeleteByID(context.Context, int32) error
 }
 
 type Handler struct {
@@ -77,23 +77,18 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} httpx.ErrorResponse
 // @Router /spendings [get]
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	h.list(w, r, false)
-}
-
-func (h *Handler) list(w http.ResponseWriter, r *http.Request, admin bool) {
 	query := r.URL.Query()
-	var userID int
+	var userID int32
 	var err error
-	if !admin || query.Has("user_id") {
-		userID, err = strconv.Atoi(query.Get("user_id"))
-		if err != nil {
-			httpx.WriteError(w, errInvalidUserID)
-			return
-		}
-		if err := httpx.Validate(UserIDParams{UserID: userID}); err != nil {
-			httpx.WriteValidationError(w, err)
-			return
-		}
+	value, parseErr := strconv.ParseInt(query.Get("user_id"), 10, 32)
+	if parseErr != nil {
+		httpx.WriteError(w, errInvalidUserID)
+		return
+	}
+	userID = int32(value)
+	if err := httpx.Validate(UserIDParams{UserID: userID}); err != nil {
+		httpx.WriteValidationError(w, err)
+		return
 	}
 	params := ListParams{UserID: userID, Category: Category(query.Get("category")), Limit: 20}
 	if query.Has("limit") {
@@ -136,12 +131,7 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request, admin bool) {
 			return
 		}
 	}
-	var result []Spending
-	if admin {
-		result, err = h.spendings.ListAll(r.Context(), params)
-	} else {
-		result, err = h.spendings.List(r.Context(), params)
-	}
+	result, err := h.spendings.List(r.Context(), params)
 	if err != nil {
 		handleRepositoryError(w, err)
 		return
@@ -151,7 +141,9 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request, admin bool) {
 
 // Update changes the provided fields of a spending.
 // @Summary Update spending
-// @Description Omitted or null fields remain unchanged. Use an empty string to clear the comment. user_id is the internal users.id.
+// @Description Omitted or null fields remain unchanged. At least one non-null field must be provided.
+// @Description Use comment="" to clear its text; comment=null leaves it unchanged and does not set SQL NULL.
+// @Description The owner cannot be changed. The user_id query parameter is the internal owner ID used to find the spending.
 // @Tags Spendings
 // @Accept json
 // @Produce json
@@ -164,30 +156,26 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request, admin bool) {
 // @Failure 500 {object} httpx.ErrorResponse
 // @Router /spendings/{id} [patch]
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
-	h.update(w, r, false)
-}
-
-func (h *Handler) update(w http.ResponseWriter, r *http.Request, admin bool) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	value, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 32)
 	if err != nil {
 		httpx.WriteError(w, errInvalidID)
 		return
 	}
+	id := int32(value)
 	if err := httpx.Validate(IDParams{ID: id}); err != nil {
 		httpx.WriteValidationError(w, err)
 		return
 	}
-	var userID int
-	if !admin {
-		userID, err = strconv.Atoi(r.URL.Query().Get("user_id"))
-		if err != nil {
-			httpx.WriteError(w, errInvalidUserID)
-			return
-		}
-		if err := httpx.Validate(UserIDParams{UserID: userID}); err != nil {
-			httpx.WriteValidationError(w, err)
-			return
-		}
+	var userID int32
+	value, parseErr := strconv.ParseInt(r.URL.Query().Get("user_id"), 10, 32)
+	if parseErr != nil {
+		httpx.WriteError(w, errInvalidUserID)
+		return
+	}
+	userID = int32(value)
+	if err := httpx.Validate(UserIDParams{UserID: userID}); err != nil {
+		httpx.WriteValidationError(w, err)
+		return
 	}
 	var params UpdateParams
 	if err := httpx.DecodeJSON(r, &params); err != nil {
@@ -198,12 +186,7 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request, admin bool) {
 		httpx.WriteValidationError(w, err)
 		return
 	}
-	var result Spending
-	if admin {
-		result, err = h.spendings.UpdateByID(r.Context(), id, params)
-	} else {
-		result, err = h.spendings.Update(r.Context(), id, userID, params)
-	}
+	result, err := h.spendings.Update(r.Context(), id, userID, params)
 	if err != nil {
 		handleRepositoryError(w, err)
 		return
@@ -223,36 +206,28 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request, admin bool) {
 // @Failure 500 {object} httpx.ErrorResponse
 // @Router /spendings/{id} [delete]
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
-	h.delete(w, r, false)
-}
-
-func (h *Handler) delete(w http.ResponseWriter, r *http.Request, admin bool) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	value, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 32)
 	if err != nil {
 		httpx.WriteError(w, errInvalidID)
 		return
 	}
+	id := int32(value)
 	if err := httpx.Validate(IDParams{ID: id}); err != nil {
 		httpx.WriteValidationError(w, err)
 		return
 	}
-	var userID int
-	if !admin {
-		userID, err = strconv.Atoi(r.URL.Query().Get("user_id"))
-		if err != nil {
-			httpx.WriteError(w, errInvalidUserID)
-			return
-		}
-		if err := httpx.Validate(UserIDParams{UserID: userID}); err != nil {
-			httpx.WriteValidationError(w, err)
-			return
-		}
+	var userID int32
+	value, parseErr := strconv.ParseInt(r.URL.Query().Get("user_id"), 10, 32)
+	if parseErr != nil {
+		httpx.WriteError(w, errInvalidUserID)
+		return
 	}
-	if admin {
-		err = h.spendings.DeleteByID(r.Context(), id)
-	} else {
-		err = h.spendings.Delete(r.Context(), id, userID)
+	userID = int32(value)
+	if err := httpx.Validate(UserIDParams{UserID: userID}); err != nil {
+		httpx.WriteValidationError(w, err)
+		return
 	}
+	err = h.spendings.Delete(r.Context(), id, userID)
 	if err != nil {
 		handleRepositoryError(w, err)
 		return

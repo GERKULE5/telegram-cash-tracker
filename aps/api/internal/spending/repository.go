@@ -14,7 +14,7 @@ type PostgresRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewRepository(db *pgxpool.Pool) *PostgresRepository {
+func NewPostgresRepository(db *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{db: db}
 }
 
@@ -42,27 +42,28 @@ func (r *PostgresRepository) Create(ctx context.Context, params CreateParams) (S
 }
 
 func (r *PostgresRepository) List(ctx context.Context, params ListParams) ([]Spending, error) {
-	return r.list(ctx, params, &params.UserID)
-}
-
-func (r *PostgresRepository) ListAll(ctx context.Context, params ListParams) ([]Spending, error) {
-	if params.UserID != 0 {
-		return r.list(ctx, params, &params.UserID)
-	}
-	return r.list(ctx, params, nil)
-}
-
-func (r *PostgresRepository) list(ctx context.Context, params ListParams, userID *int) ([]Spending, error) {
-	rows, err := r.db.Query(ctx, `
+	query := `
 		SELECT id, user_id, amount, category, spent_at, comment, created_at, updated_at
 		FROM spendings
-		WHERE ($1::integer IS NULL OR user_id = $1)
-		  AND ($2::text = '' OR category::text = $2)
-		  AND ($3::timestamptz IS NULL OR spent_at >= $3)
-		  AND ($4::timestamptz IS NULL OR spent_at < $4)
-		ORDER BY created_at DESC, id DESC
-		LIMIT $5 OFFSET $6
-	`, userID, params.Category, params.From, params.To, params.Limit, params.Offset)
+		WHERE user_id = $1
+	`
+	args := []any{params.UserID}
+	if params.Category != "" {
+		args = append(args, params.Category)
+		query += fmt.Sprintf(" AND category = $%d", len(args))
+	}
+	if params.From != nil {
+		args = append(args, *params.From)
+		query += fmt.Sprintf(" AND spent_at >= $%d", len(args))
+	}
+	if params.To != nil {
+		args = append(args, *params.To)
+		query += fmt.Sprintf(" AND spent_at < $%d", len(args))
+	}
+	args = append(args, params.Limit, params.Offset)
+	query += fmt.Sprintf(" ORDER BY created_at DESC, id DESC LIMIT $%d OFFSET $%d", len(args)-1, len(args))
+
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("list spendings: %w", err)
 	}
@@ -82,15 +83,53 @@ func (r *PostgresRepository) list(ctx context.Context, params ListParams, userID
 	return result, nil
 }
 
-func (r *PostgresRepository) Update(ctx context.Context, id, userID int, params UpdateParams) (Spending, error) {
-	return r.update(ctx, id, &userID, params)
+func (r *PostgresRepository) ListAll(ctx context.Context, params ListParams) ([]Spending, error) {
+	query := `
+		SELECT id, user_id, amount, category, spent_at, comment, created_at, updated_at
+		FROM spendings
+		WHERE TRUE
+	`
+	args := make([]any, 0)
+	if params.UserID != 0 {
+		args = append(args, params.UserID)
+		query += " AND user_id = $1"
+	}
+	if params.Category != "" {
+		args = append(args, params.Category)
+		query += fmt.Sprintf(" AND category = $%d", len(args))
+	}
+	if params.From != nil {
+		args = append(args, *params.From)
+		query += fmt.Sprintf(" AND spent_at >= $%d", len(args))
+	}
+	if params.To != nil {
+		args = append(args, *params.To)
+		query += fmt.Sprintf(" AND spent_at < $%d", len(args))
+	}
+	args = append(args, params.Limit, params.Offset)
+	query += fmt.Sprintf(" ORDER BY created_at DESC, id DESC LIMIT $%d OFFSET $%d", len(args)-1, len(args))
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list spendings: %w", err)
+	}
+	defer rows.Close()
+
+	result := make([]Spending, 0)
+	for rows.Next() {
+		item, err := mapSpending(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan spending: %w", err)
+		}
+		result = append(result, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read spendings: %w", err)
+	}
+	return result, nil
 }
 
-func (r *PostgresRepository) UpdateByID(ctx context.Context, id int, params UpdateParams) (Spending, error) {
-	return r.update(ctx, id, nil, params)
-}
-
-func (r *PostgresRepository) update(ctx context.Context, id int, userID *int, params UpdateParams) (Spending, error) {
+func (r *PostgresRepository) Update(ctx context.Context, id, userID int32, params UpdateParams) (Spending, error) {
 	result, err := mapSpending(r.db.QueryRow(ctx, `
 		UPDATE spendings
 		SET amount = COALESCE($3::integer, amount),
@@ -98,7 +137,7 @@ func (r *PostgresRepository) update(ctx context.Context, id int, userID *int, pa
 		    spent_at = COALESCE($5::timestamptz, spent_at),
 		    comment = COALESCE($6::text, comment),
 		    updated_at = CURRENT_TIMESTAMP
-		WHERE id = $1 AND ($2::integer IS NULL OR user_id = $2)
+		WHERE id = $1 AND user_id = $2
 		RETURNING id, user_id, amount, category, spent_at, comment, created_at, updated_at
 	`, id, userID, params.Amount, params.Category, params.SpentAt, params.Comment))
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -110,16 +149,28 @@ func (r *PostgresRepository) update(ctx context.Context, id int, userID *int, pa
 	return result, nil
 }
 
-func (r *PostgresRepository) Delete(ctx context.Context, id, userID int) error {
-	return r.delete(ctx, id, &userID)
+func (r *PostgresRepository) UpdateByID(ctx context.Context, id int32, params UpdateParams) (Spending, error) {
+	result, err := mapSpending(r.db.QueryRow(ctx, `
+		UPDATE spendings
+		SET amount = COALESCE($2::integer, amount),
+		    category = COALESCE($3::category, category),
+		    spent_at = COALESCE($4::timestamptz, spent_at),
+		    comment = COALESCE($5::text, comment),
+		    updated_at = CURRENT_TIMESTAMP
+		WHERE id = $1
+		RETURNING id, user_id, amount, category, spent_at, comment, created_at, updated_at
+	`, id, params.Amount, params.Category, params.SpentAt, params.Comment))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Spending{}, ErrNotFound
+	}
+	if err != nil {
+		return Spending{}, fmt.Errorf("update spending: %w", err)
+	}
+	return result, nil
 }
 
-func (r *PostgresRepository) DeleteByID(ctx context.Context, id int) error {
-	return r.delete(ctx, id, nil)
-}
-
-func (r *PostgresRepository) delete(ctx context.Context, id int, userID *int) error {
-	result, err := r.db.Exec(ctx, `DELETE FROM spendings WHERE id = $1 AND ($2::integer IS NULL OR user_id = $2)`, id, userID)
+func (r *PostgresRepository) Delete(ctx context.Context, id, userID int32) error {
+	result, err := r.db.Exec(ctx, `DELETE FROM spendings WHERE id = $1 AND user_id = $2`, id, userID)
 	if err != nil {
 		return fmt.Errorf("delete spending: %w", err)
 	}
@@ -129,7 +180,18 @@ func (r *PostgresRepository) delete(ctx context.Context, id int, userID *int) er
 	return nil
 }
 
-func (r *PostgresRepository) GetByID(ctx context.Context, id int) (Spending, error) {
+func (r *PostgresRepository) DeleteByID(ctx context.Context, id int32) error {
+	result, err := r.db.Exec(ctx, `DELETE FROM spendings WHERE id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("delete spending: %w", err)
+	}
+	if result.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func (r *PostgresRepository) GetByID(ctx context.Context, id int32) (Spending, error) {
 	result, err := mapSpending(r.db.QueryRow(ctx, `
 		SELECT id, user_id, amount, category, spent_at, comment, created_at, updated_at
 		FROM spendings WHERE id = $1

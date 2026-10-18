@@ -98,8 +98,6 @@ definitions:
       spent_at:
         example: "2026-10-17T12:00:00+07:00"
         type: string
-    required:
-    - spent_at
     type: object
   user.CreateUserParams:
     properties:
@@ -202,7 +200,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: user_id in the body is the internal users.id. Amount is in kopecks.
+      description: user_id in the body is the internal users.id.
       parameters:
       - description: Spending data
         in: body
@@ -465,8 +463,10 @@ paths:
     patch:
       consumes:
       - application/json
-      description: Omitted or null fields remain unchanged. Use an empty string to
-        clear the comment. user_id is the internal users.id.
+      description: |-
+        Omitted or null fields remain unchanged. At least one non-null field must be provided.
+        Use comment="" to clear its text; comment=null leaves it unchanged and does not set SQL NULL.
+        The owner cannot be changed. The user_id query parameter is the internal owner ID used to find the spending.
       parameters:
       - description: Spending ID
         in: path
@@ -512,8 +512,11 @@ paths:
     post:
       consumes:
       - application/json
+      description: telegram_user_id is required and must be positive. username and
+        name are optional (up to 64 and 128 characters). The internal user ID is generated
+        by the server.
       parameters:
-      - description: Данные для создания пользователя
+      - description: User data
         in: body
         name: request
         required: true
@@ -523,15 +526,15 @@ paths:
       - application/json
       responses:
         "201":
-          description: Created
+          description: User created
           schema:
             $ref: '#/definitions/user.User'
         "400":
-          description: Invalid request
+          description: Invalid JSON or validation error
           schema:
             $ref: '#/definitions/httpx.ErrorResponse'
         "409":
-          description: Telegram user already exists
+          description: User with this telegram_user_id already exists
           schema:
             $ref: '#/definitions/httpx.ErrorResponse'
         "500":

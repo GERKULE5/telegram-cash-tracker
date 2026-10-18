@@ -8,6 +8,7 @@ import (
 	"api/internal/spending"
 	"api/internal/user"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -22,10 +23,15 @@ import (
 // @description API for tracking family expenses.
 // @BasePath /
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
 
+func run() error {
 	config, err := config.Load()
 	if err != nil {
-		log.Fatalf("load config: %v", err)
+		return fmt.Errorf("load config: %w", err)
 	}
 
 	dsn := fmt.Sprintf(
@@ -39,7 +45,7 @@ func main() {
 
 	db, err := postgres.New(context.Background(), dsn)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("connect to postgres: %w", err)
 	}
 	defer db.Close()
 	log.Println("postgres connected")
@@ -52,10 +58,10 @@ func main() {
 	r.Get("/docs/*", httpSwagger.Handler(httpSwagger.URL("/docs/doc.json")))
 
 	// users
-	userHandler := user.NewHandler(user.NewRepository(db))
+	userHandler := user.NewHandler(user.NewPostgresRepository(db))
 	r.Post("/users", userHandler.Create)
 
-	spendingRepository := spending.NewRepository(db)
+	spendingRepository := spending.NewPostgresRepository(db)
 	spendingHandler := spending.NewHandler(spendingRepository)
 	r.Post("/spendings", spendingHandler.Create)
 	r.Get("/spendings", spendingHandler.List)
@@ -71,6 +77,10 @@ func main() {
 		r.Delete("/spendings/{id}", adminSpendingHandler.Delete)
 	})
 
-	fmt.Printf("server is working on %s\n", config.Port)
-	http.ListenAndServe(":"+config.Port, r)
+	addr := ":" + config.Port
+	log.Printf("starting HTTP server on %s", addr)
+	if err := http.ListenAndServe(addr, r); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return fmt.Errorf("serve HTTP: %w", err)
+	}
+	return nil
 }

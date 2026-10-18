@@ -11,18 +11,3 @@ const (
 	CategoryPurchases     Category = "purchases"
 	CategoryOther         Category = "other"
 )
-
-func (c Category) IsValid() bool {
-	switch c {
-	case CategoryFood,
-		CategoryTransport,
-		CategoryHousing,
-		CategoryEntertainment,
-		CategoryHealth,
-		CategoryPurchases,
-		CategoryOther:
-		return true
-	default:
-		return false
-	}
-}

@@ -8,15 +8,15 @@ import (
 	"net/http"
 )
 
-type Creator interface {
+type Repository interface {
 	Create(context.Context, CreateUserParams) (User, error)
 }
 
 type Handler struct {
-	users Creator
+	users Repository
 }
 
-func NewHandler(users Creator) *Handler {
+func NewHandler(users Repository) *Handler {
 	return &Handler{users: users}
 }
 

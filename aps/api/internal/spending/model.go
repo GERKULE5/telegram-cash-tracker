@@ -3,9 +3,9 @@ package spending
 import "time"
 
 type Spending struct {
-	ID        int        `json:"id"`
-	UserID    int        `json:"user_id"`
-	Amount    int        `json:"amount"`
+	ID        int32      `json:"id"`
+	UserID    int32      `json:"user_id"`
+	Amount    int32      `json:"amount"`
 	Category  Category   `json:"category"`
 	SpentAt   time.Time  `json:"spent_at"`
 	Comment   *string    `json:"comment"`
@@ -14,22 +14,22 @@ type Spending struct {
 }
 
 type CreateParams struct {
-	UserID   int       `json:"user_id" validate:"required,min=1" minimum:"1" example:"1"`
-	Amount   int       `json:"amount" validate:"required,min=1" minimum:"1" example:"35000"`
+	UserID   int32     `json:"user_id" validate:"required,min=1" minimum:"1" example:"1"`
+	Amount   int32     `json:"amount" validate:"required,min=1" minimum:"1" example:"35000"`
 	Category Category  `json:"category" validate:"required,oneof=food transport housing entertainment health purchases other" enums:"food,transport,housing,entertainment,health,purchases,other"`
 	SpentAt  time.Time `json:"spent_at" validate:"required" example:"2026-10-17T12:00:00+07:00"`
 	Comment  *string   `json:"comment" example:"Coffee"`
 }
 
 type UpdateParams struct {
-	Amount   *int       `json:"amount" validate:"required_without_all=Category SpentAt Comment,omitnil,min=1" minimum:"1" example:"45000"`
+	Amount   *int32     `json:"amount" validate:"omitnil,min=1" minimum:"1" example:"45000"`
 	Category *Category  `json:"category" validate:"omitnil,oneof=food transport housing entertainment health purchases other" enums:"food,transport,housing,entertainment,health,purchases,other"`
-	SpentAt  *time.Time `json:"spent_at" validate:"omitnil,required" example:"2026-10-17T12:00:00+07:00"`
+	SpentAt  *time.Time `json:"spent_at" validate:"omitnil,notzerotime" example:"2026-10-17T12:00:00+07:00"`
 	Comment  *string    `json:"comment" example:"Coffee"`
 }
 
 type ListParams struct {
-	UserID   int      `json:"user_id" validate:"min=0"`
+	UserID   int32    `json:"user_id" validate:"min=0"`
 	Category Category `json:"category" validate:"omitempty,oneof=food transport housing entertainment health purchases other"`
 	From     *time.Time
 	To       *time.Time
@@ -38,11 +38,11 @@ type ListParams struct {
 }
 
 type IDParams struct {
-	ID int `json:"id" validate:"min=1"`
+	ID int32 `json:"id" validate:"min=1"`
 }
 
 type UserIDParams struct {
-	UserID int `json:"user_id" validate:"min=1"`
+	UserID int32 `json:"user_id" validate:"min=1"`
 }
 
 type PeriodParams struct {

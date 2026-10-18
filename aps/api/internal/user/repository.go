@@ -11,21 +11,15 @@ import (
 
 var ErrAlreadyExists = errors.New("user already exists")
 
-type CreateUserParams struct {
-	TelegramUserID int     `json:"telegram_user_id" validate:"required,min=1" minimum:"1" example:"123456789"`
-	Username       *string `json:"username" validate:"omitnil,max=64" maxLength:"64" example:"ivan"`
-	Name           *string `json:"name" validate:"omitnil,max=128" maxLength:"128" example:"Ivan"`
-}
-
-type Repository struct {
+type PostgresRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewRepository(db *pgxpool.Pool) *Repository {
-	return &Repository{db: db}
+func NewPostgresRepository(db *pgxpool.Pool) *PostgresRepository {
+	return &PostgresRepository{db: db}
 }
 
-func (r *Repository) Create(ctx context.Context, params CreateUserParams) (User, error) {
+func (r *PostgresRepository) Create(ctx context.Context, params CreateUserParams) (User, error) {
 	var user User
 	err := r.db.QueryRow(ctx, `
 		INSERT INTO users (telegram_user_id, username, name)
