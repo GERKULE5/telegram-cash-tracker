@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bot/internal/config"
 	"context"
 	"log"
 	"os"
@@ -8,19 +9,15 @@ import (
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
-	"github.com/joho/godotenv"
 )
 
 func main() {
 
-	envFile := os.Getenv("ENV_FILE")
-
-	if envFile != "" {
-		if err := godotenv.Load(envFile); err != nil {
-			log.Fatalf("failed load env %v", err)
-		}
+	config, err := config.Load()
+	if err != nil {
+		log.Fatalf("load config: %v", err)
 	}
-	
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
@@ -29,9 +26,9 @@ func main() {
 		bot.WithDebug(),
 	}
 
-	b, err := bot.New(os.Getenv("BOT_TOKEN"), opts...)
+	b, err := bot.New(config.BotToken, opts...)
 	if err != nil {
-		panic(err)
+		log.Fatalf("create telegram bot: %v", err)
 	}
 
 	b.Start(ctx)
