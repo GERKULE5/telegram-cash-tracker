@@ -7,7 +7,7 @@ run-api:
 
 .PHONY: run-web
 run-web:
-	cd aps/web && bun run dev
+	cd aps/web && bun --env-file=../../.env run dev
 
 .PHONY: run-bot
 run-bot:

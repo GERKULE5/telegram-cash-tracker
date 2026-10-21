@@ -17,7 +17,7 @@ type Repository interface {
 	List(context.Context, ListParams) ([]Spending, error)
 	Update(context.Context, int32, int32, UpdateParams) (Spending, error)
 	Delete(context.Context, int32, int32) error
-	ListAll(context.Context, ListParams) ([]Spending, error)
+	ListAll(context.Context, ListParams) ([]SpendingWithUsername, error)
 	GetByID(context.Context, int32) (Spending, error)
 	UpdateByID(context.Context, int32, UpdateParams) (Spending, error)
 	DeleteByID(context.Context, int32) error

@@ -13,6 +13,11 @@ type Spending struct {
 	UpdatedAt *time.Time `json:"updated_at"`
 }
 
+type SpendingWithUsername struct {
+	Spending
+	Username *string `json:"username"`
+}
+
 type CreateParams struct {
 	UserID   int32     `json:"user_id" validate:"required,min=1" minimum:"1" example:"1"`
 	Amount   int32     `json:"amount" validate:"required,min=1" minimum:"1" example:"350"`

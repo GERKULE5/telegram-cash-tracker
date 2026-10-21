@@ -58,7 +58,7 @@ func (h *AdminHandler) Create(w http.ResponseWriter, r *http.Request) {
 // @Param to query string false "Period end (RFC3339, exclusive)"
 // @Param limit query int false "Page size" default(20) minimum(1) maximum(100)
 // @Param offset query int false "Records to skip" default(0) minimum(0)
-// @Success 200 {array} Spending
+// @Success 200 {array} SpendingWithUsername
 // @Failure 400 {object} httpx.ErrorResponse
 // @Failure 500 {object} httpx.ErrorResponse
 // @Router /admin/spendings [get]

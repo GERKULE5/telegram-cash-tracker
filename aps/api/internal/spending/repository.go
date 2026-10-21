@@ -83,31 +83,33 @@ func (r *PostgresRepository) List(ctx context.Context, params ListParams) ([]Spe
 	return result, nil
 }
 
-func (r *PostgresRepository) ListAll(ctx context.Context, params ListParams) ([]Spending, error) {
+func (r *PostgresRepository) ListAll(ctx context.Context, params ListParams) ([]SpendingWithUsername, error) {
 	query := `
-		SELECT id, user_id, amount, category, spent_at, comment, created_at, updated_at
-		FROM spendings
+		SELECT s.id, s.user_id, s.amount, s.category, s.spent_at, s.comment,
+		       s.created_at, s.updated_at, u.username
+		FROM spendings s
+		JOIN users u ON u.id = s.user_id
 		WHERE TRUE
 	`
 	args := make([]any, 0)
 	if params.UserID != 0 {
 		args = append(args, params.UserID)
-		query += " AND user_id = $1"
+		query += " AND s.user_id = $1"
 	}
 	if params.Category != "" {
 		args = append(args, params.Category)
-		query += fmt.Sprintf(" AND category = $%d", len(args))
+		query += fmt.Sprintf(" AND s.category = $%d", len(args))
 	}
 	if params.From != nil {
 		args = append(args, *params.From)
-		query += fmt.Sprintf(" AND spent_at >= $%d", len(args))
+		query += fmt.Sprintf(" AND s.spent_at >= $%d", len(args))
 	}
 	if params.To != nil {
 		args = append(args, *params.To)
-		query += fmt.Sprintf(" AND spent_at < $%d", len(args))
+		query += fmt.Sprintf(" AND s.spent_at < $%d", len(args))
 	}
 	args = append(args, params.Limit, params.Offset)
-	query += fmt.Sprintf(" ORDER BY created_at DESC, id DESC LIMIT $%d OFFSET $%d", len(args)-1, len(args))
+	query += fmt.Sprintf(" ORDER BY s.created_at DESC, s.id DESC LIMIT $%d OFFSET $%d", len(args)-1, len(args))
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -115,9 +117,11 @@ func (r *PostgresRepository) ListAll(ctx context.Context, params ListParams) ([]
 	}
 	defer rows.Close()
 
-	result := make([]Spending, 0)
+	result := make([]SpendingWithUsername, 0)
 	for rows.Next() {
-		item, err := mapSpending(rows)
+		var item SpendingWithUsername
+		err := rows.Scan(&item.ID, &item.UserID, &item.Amount, &item.Category,
+			&item.SpentAt, &item.Comment, &item.CreatedAt, &item.UpdatedAt, &item.Username)
 		if err != nil {
 			return nil, fmt.Errorf("scan spending: %w", err)
 		}
