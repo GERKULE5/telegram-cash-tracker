@@ -15,3 +15,7 @@ type CreateUserParams struct {
 	Username       *string `json:"username" validate:"omitnil,max=64" maxLength:"64" example:"ivan"`
 	Name           *string `json:"name" validate:"omitnil,max=128" maxLength:"128" example:"Ivan"`
 }
+
+type TelegramIDParams struct {
+	TelegramUserID int64 `json:"telegram_user_id" validate:"min=1"`
+}

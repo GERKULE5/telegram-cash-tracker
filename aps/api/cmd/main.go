@@ -60,6 +60,7 @@ func run() error {
 	// users
 	userHandler := user.NewHandler(user.NewPostgresRepository(db))
 	r.Post("/users", userHandler.Create)
+	r.Get("/users", userHandler.GetByTelegramID)
 
 	spendingRepository := spending.NewPostgresRepository(db)
 	spendingHandler := spending.NewHandler(spendingRepository)

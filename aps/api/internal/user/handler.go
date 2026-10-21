@@ -6,10 +6,12 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 type Repository interface {
 	Create(context.Context, CreateUserParams) (User, error)
+	GetByTelegramID(context.Context, int64) (User, error)
 }
 
 type Handler struct {
@@ -54,4 +56,37 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.WriteJSON(w, http.StatusCreated, result)
+}
+
+// GetByTelegramID finds the internal user linked to a Telegram account.
+// @Summary Find user by Telegram ID
+// @Tags Users
+// @Produce json
+// @Param telegram_user_id query int true "Telegram user ID" minimum(1)
+// @Success 200 {object} User
+// @Failure 400 {object} httpx.ErrorResponse
+// @Failure 404 {object} httpx.ErrorResponse
+// @Failure 500 {object} httpx.ErrorResponse
+// @Router /users [get]
+func (h *Handler) GetByTelegramID(w http.ResponseWriter, r *http.Request) {
+	telegramID, err := strconv.ParseInt(r.URL.Query().Get("telegram_user_id"), 10, 64)
+	if err != nil {
+		httpx.WriteError(w, errInvalidTelegramID)
+		return
+	}
+	if err := httpx.Validate(TelegramIDParams{TelegramUserID: telegramID}); err != nil {
+		httpx.WriteValidationError(w, err)
+		return
+	}
+	result, err := h.users.GetByTelegramID(r.Context(), telegramID)
+	if errors.Is(err, ErrNotFound) {
+		httpx.WriteError(w, errNotFound)
+		return
+	}
+	if err != nil {
+		log.Printf("get user by Telegram ID: %v", err)
+		httpx.WriteError(w, errInternal)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, result)
 }

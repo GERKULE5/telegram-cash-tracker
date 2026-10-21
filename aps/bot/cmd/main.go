@@ -1,14 +1,19 @@
 package main
 
 import (
+	"bot/internal/actions"
+	"bot/internal/agent"
+	"bot/internal/api"
 	"bot/internal/config"
+	"bot/internal/llm"
+	"bot/internal/telegram"
 	"context"
 	"log"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/go-telegram/bot"
-	"github.com/go-telegram/bot/models"
 )
 
 func main() {
@@ -21,8 +26,22 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
+	client := llm.NewClient(config.LLMAPIKey, config.LLMBaseURL, config.LLMModel, 10*time.Second)
+
+	apiClient := api.NewClient(config.APIBaseURL, 10*time.Second)
+
+	executor := actions.NewExecutor(apiClient)
+
+	loop := agent.NewLoop(client, executor)
+
+	location, err := time.LoadLocation(config.Timezone)
+	if err != nil {
+		log.Fatalf("load bot timezone: %v", err)
+	}
+	handler := telegram.NewHandler(loop, apiClient, location)
+
 	opts := []bot.Option{
-		bot.WithDefaultHandler(handler),
+		bot.WithDefaultHandler(handler.Handle),
 		bot.WithDebug(),
 	}
 
@@ -32,11 +51,4 @@ func main() {
 	}
 
 	b.Start(ctx)
-}
-
-func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
-	b.SendMessage(ctx, &bot.SendMessageParams{
-		ChatID: update.Message.Chat.ID,
-		Text:   update.Message.Text,
-	})
 }

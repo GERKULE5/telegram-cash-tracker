@@ -13,6 +13,7 @@ type Config struct {
 	LLMBaseURL string
 	LLMAPIKey  string
 	LLMModel   string
+	Timezone   string
 }
 
 func Load() (Config, error) {
@@ -28,6 +29,10 @@ func Load() (Config, error) {
 		LLMBaseURL: os.Getenv("LLM_BASE_URL"),
 		LLMAPIKey:  os.Getenv("LLM_API_KEY"),
 		LLMModel:   os.Getenv("LLM_MODEL"),
+		Timezone:   os.Getenv("BOT_TIMEZONE"),
+	}
+	if config.Timezone == "" {
+		config.Timezone = "UTC"
 	}
 
 	required := []struct {

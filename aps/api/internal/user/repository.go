@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var ErrAlreadyExists = errors.New("user already exists")
+var ErrNotFound = errors.New("user not found")
 
 type PostgresRepository struct {
 	db *pgxpool.Pool
@@ -38,6 +40,21 @@ func (r *PostgresRepository) Create(ctx context.Context, params CreateUserParams
 			return User{}, ErrAlreadyExists
 		}
 		return User{}, fmt.Errorf("create user: %w", err)
+	}
+	return user, nil
+}
+
+func (r *PostgresRepository) GetByTelegramID(ctx context.Context, telegramID int64) (User, error) {
+	var user User
+	err := r.db.QueryRow(ctx, `
+		SELECT id, telegram_user_id, username, name, created_at
+		FROM users WHERE telegram_user_id = $1
+	`, telegramID).Scan(&user.ID, &user.TelegramUserID, &user.Username, &user.Name, &user.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return User{}, ErrNotFound
+	}
+	if err != nil {
+		return User{}, fmt.Errorf("get user by Telegram ID: %w", err)
 	}
 	return user, nil
 }

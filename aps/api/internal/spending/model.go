@@ -15,14 +15,14 @@ type Spending struct {
 
 type CreateParams struct {
 	UserID   int32     `json:"user_id" validate:"required,min=1" minimum:"1" example:"1"`
-	Amount   int32     `json:"amount" validate:"required,min=1" minimum:"1" example:"35000"`
+	Amount   int32     `json:"amount" validate:"required,min=1" minimum:"1" example:"350"`
 	Category Category  `json:"category" validate:"required,oneof=food transport housing entertainment health purchases other" enums:"food,transport,housing,entertainment,health,purchases,other"`
 	SpentAt  time.Time `json:"spent_at" validate:"required" example:"2026-10-17T12:00:00+07:00"`
 	Comment  *string   `json:"comment" example:"Coffee"`
 }
 
 type UpdateParams struct {
-	Amount   *int32     `json:"amount" validate:"omitnil,min=1" minimum:"1" example:"45000"`
+	Amount   *int32     `json:"amount" validate:"omitnil,min=1" minimum:"1" example:"450"`
 	Category *Category  `json:"category" validate:"omitnil,oneof=food transport housing entertainment health purchases other" enums:"food,transport,housing,entertainment,health,purchases,other"`
 	SpentAt  *time.Time `json:"spent_at" validate:"omitnil,notzerotime" example:"2026-10-17T12:00:00+07:00"`
 	Comment  *string    `json:"comment" example:"Coffee"`
