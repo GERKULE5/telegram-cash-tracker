@@ -15,7 +15,7 @@ run-bot:
 
 .PHONY: up
 up:
-	docker compose up -d
+	docker compose up --build -d
 
 .PHONY: migrate-create
 migrate-create:

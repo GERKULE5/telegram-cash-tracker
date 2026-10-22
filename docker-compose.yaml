@@ -1,4 +1,53 @@
 services:
+  api:
+    build: ./aps/api
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      API_PORT: "8080"
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USERNAME: ${POSTGRES_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  bot:
+    build: ./aps/bot
+    restart: unless-stopped
+    stop_signal: SIGINT
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      API_BASE_URL: http://api:8080
+      BOT_TOKEN: ${BOT_TOKEN}
+      BOT_TIMEZONE: ${BOT_TIMEZONE:-Europe/Moscow}
+      LLM_BASE_URL: ${LLM_BASE_URL}
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_MODEL: ${LLM_MODEL}
+
+  web:
+    build: ./aps/web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      API_BASE_URL: http://api:8080
+      WEB_PORT: "3000"
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+
   postgres:
     image: postgres:18-alpine
     restart: unless-stopped
