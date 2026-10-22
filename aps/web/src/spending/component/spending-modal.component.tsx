@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import type { UserEntity } from '../../user/user.entity';
+import { getUserLabel } from '../../user/user.util';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import type { FormEvent, SyntheticEvent } from 'react';
@@ -11,12 +13,14 @@ import {
 import { toLocalDateTime } from '../spending.util';
 
 interface SpendingModalProps {
+  users: UserEntity[];
   spending: SpendingEntity | null;
   onSave: (values: CreateSpendingDTO) => Promise<void>;
   onClose: () => void;
 }
 
 export const SpendingModal = ({
+  users,
   spending,
   onSave,
   onClose,
@@ -80,17 +84,28 @@ export const SpendingModal = ({
       <form onSubmit={handleSubmit}>
         <fieldset disabled={saving}>
           <label>
-            Член семьи · внутренний ID
-            <input
+            Член семьи
+            <select
               name="user_id"
-              type="number"
               required
-              min="1"
-              max="2147483647"
-              defaultValue={spending?.user_id}
+              defaultValue={spending?.user_id ?? ''}
               disabled={!!spending}
-              placeholder="Например, 1"
-            />
+            >
+              <option value="" disabled>
+                Выберите участника
+              </option>
+              {spending &&
+                !users.some(user => user.id === spending.user_id) && (
+                  <option value={spending.user_id}>
+                    Участник #{spending.user_id}
+                  </option>
+                )}
+              {users.map(user => (
+                <option key={user.id} value={user.id}>
+                  {getUserLabel(user)}
+                </option>
+              ))}
+            </select>
           </label>
 
           <div className="form-grid">

@@ -1,13 +1,21 @@
 import { useState } from 'react';
+import type { UserEntity } from '../../user/user.entity';
+import { getUserLabel } from '../../user/user.util';
 import type { FormEvent } from 'react';
 import { categories } from '../spending.entity';
 import type { Category, SpendingFilters } from '../spending.entity';
 
 interface SpendingFiltersFormProps {
+  users: UserEntity[];
+  usersLoading: boolean;
   onApply: (filters: SpendingFilters) => void;
 }
 
-export const SpendingFiltersForm = ({ onApply }: SpendingFiltersFormProps) => {
+export const SpendingFiltersForm = ({
+  users,
+  usersLoading,
+  onApply,
+}: SpendingFiltersFormProps) => {
   const [error, setError] = useState('');
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -59,13 +67,16 @@ export const SpendingFiltersForm = ({ onApply }: SpendingFiltersFormProps) => {
       <form className="filters" onSubmit={handleSubmit} onReset={handleReset}>
         <label>
           Член семьи
-          <input
-            name="user_id"
-            type="number"
-            min="1"
-            max="2147483647"
-            placeholder="Все · ID участника"
-          />
+          <select name="user_id" disabled={usersLoading}>
+            <option value="">
+              {usersLoading ? 'Загружаем участников…' : 'Все участники'}
+            </option>
+            {users.map(user => (
+              <option key={user.id} value={user.id}>
+                {getUserLabel(user)}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label>

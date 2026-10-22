@@ -10,8 +10,26 @@ import (
 )
 
 type Repository interface {
+	List(context.Context) ([]User, error)
 	Create(context.Context, CreateUserParams) (User, error)
 	GetByTelegramID(context.Context, int64) (User, error)
+}
+
+// List returns all users, including users without spendings.
+// @Summary List family members
+// @Tags Admin Users
+// @Produce json
+// @Success 200 {array} User
+// @Failure 500 {object} httpx.ErrorResponse
+// @Router /admin/users [get]
+func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
+	users, err := h.users.List(r.Context())
+	if err != nil {
+		log.Printf("list users: %v", err)
+		httpx.WriteError(w, errInternal)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, users)
 }
 
 type Handler struct {

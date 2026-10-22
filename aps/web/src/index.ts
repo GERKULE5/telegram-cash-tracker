@@ -9,6 +9,7 @@ const apiURL = (process.env.API_BASE_URL || 'http://localhost:8080').replace(
 const server = serve({
   port: process.env.WEB_PORT || 3000,
   routes: {
+    '/api/admin/users': proxy,
     '/api/admin/spendings': proxy,
     '/api/admin/spendings/:id': proxy,
     '/*': index,

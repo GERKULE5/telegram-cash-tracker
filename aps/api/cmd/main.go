@@ -71,6 +71,7 @@ func run() error {
 
 	adminSpendingHandler := spending.NewAdminHandler(spendingRepository)
 	r.Route("/admin", func(r chi.Router) {
+		r.Get("/users", userHandler.List)
 		r.Post("/spendings", adminSpendingHandler.Create)
 		r.Get("/spendings", adminSpendingHandler.List)
 		r.Get("/spendings/{id}", adminSpendingHandler.Get)

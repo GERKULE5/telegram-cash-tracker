@@ -21,6 +21,31 @@ func NewPostgresRepository(db *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{db: db}
 }
 
+func (r *PostgresRepository) List(ctx context.Context) ([]User, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT id, telegram_user_id, username, name, created_at
+		FROM users
+		ORDER BY username NULLS LAST, name NULLS LAST, id
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("list users: %w", err)
+	}
+	defer rows.Close()
+
+	users := make([]User, 0)
+	for rows.Next() {
+		var user User
+		if err := rows.Scan(&user.ID, &user.TelegramUserID, &user.Username, &user.Name, &user.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan user: %w", err)
+		}
+		users = append(users, user)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read users: %w", err)
+	}
+	return users, nil
+}
+
 func (r *PostgresRepository) Create(ctx context.Context, params CreateUserParams) (User, error) {
 	var user User
 	err := r.db.QueryRow(ctx, `

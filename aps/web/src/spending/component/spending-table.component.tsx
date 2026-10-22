@@ -75,9 +75,7 @@ export const SpendingTable = ({
                   </div>
                 </td>
 
-                <td>
-                  {categories[spending.category] ?? spending.category}
-                </td>
+                <td>{categories[spending.category] ?? spending.category}</td>
 
                 <td>
                   {spending.username
@@ -106,7 +104,9 @@ export const SpendingTable = ({
                     <button
                       className="text-button danger"
                       aria-label={`Удалить трату #${spending.id}`}
-                      title={deletingID === spending.id ? 'Удаляем…' : 'Удалить'}
+                      title={
+                        deletingID === spending.id ? 'Удаляем…' : 'Удалить'
+                      }
                       aria-busy={deletingID === spending.id}
                       disabled={deletingID !== null}
                       onClick={() => onDelete(spending)}

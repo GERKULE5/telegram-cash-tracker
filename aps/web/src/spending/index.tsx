@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { UserEntity } from '../user/user.entity';
+import { findAllUsers } from '../user/user.service';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faRotateRight } from '@fortawesome/free-solid-svg-icons';
 import type {
@@ -20,6 +22,9 @@ import { SpendingTable } from './component/spending-table.component';
 const PAGE_SIZE = 20;
 
 const SpendingModule = () => {
+  const [users, setUsers] = useState<UserEntity[]>([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [usersError, setUsersError] = useState('');
   const [spendings, setSpendings] = useState<SpendingWithUsernameEntity[]>([]);
   const [filters, setFilters] = useState<SpendingFilters>({});
   const [offset, setOffset] = useState(0);
@@ -33,6 +38,30 @@ const SpendingModule = () => {
     useState<SpendingWithUsernameEntity | null>(null);
   const [deletingID, setDeletingID] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState('');
+
+  const loadUsers = useCallback(async (signal?: AbortSignal) => {
+    setUsersLoading(true);
+    setUsersError('');
+
+    try {
+      const response = await findAllUsers(signal);
+      if (!signal?.aborted) setUsers(response.data);
+    } catch (error) {
+      if (!signal?.aborted) {
+        setUsersError(
+          error instanceof Error ? error.message : 'Could not load users.',
+        );
+      }
+    } finally {
+      if (!signal?.aborted) setUsersLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadUsers(controller.signal);
+    return () => controller.abort();
+  }, [loadUsers]);
 
   const loadSpendings = useCallback(async () => {
     // Cancel the previous load so an older response cannot replace newer data.
@@ -149,12 +178,36 @@ const SpendingModule = () => {
     <main>
       <div className="page-heading">
         <h1>Расходы семьи</h1>
-        <button className="primary" onClick={handleCreate}>
+        <button
+          className="primary"
+          onClick={handleCreate}
+          disabled={usersLoading || !!usersError || users.length === 0}
+        >
           <FontAwesomeIcon icon={faPlus} /> Добавить трату
         </button>
       </div>
 
-      <SpendingFiltersForm onApply={handleApplyFilters} />
+      {usersError && (
+        <div className="error" role="alert">
+          {usersError}{' '}
+          <button type="button" onClick={() => void loadUsers()}>
+            Повторить
+          </button>
+        </div>
+      )}
+
+      {!usersLoading && !usersError && users.length === 0 && (
+        <p>
+          Участников пока нет. Сначала напишите Telegram-боту, чтобы
+          зарегистрироваться.
+        </p>
+      )}
+
+      <SpendingFiltersForm
+        users={users}
+        usersLoading={usersLoading}
+        onApply={handleApplyFilters}
+      />
 
       <section
         className="ledger"
@@ -214,6 +267,7 @@ const SpendingModule = () => {
 
       {isFormOpen && (
         <SpendingModal
+          users={users}
           spending={editingSpending}
           onSave={handleSave}
           onClose={handleClose}
