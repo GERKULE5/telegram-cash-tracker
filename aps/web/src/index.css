@@ -1,9 +1,9 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Base styles and controls */
 
 :root {
-  font-family: "Segoe UI", Arial, sans-serif;
+  font-family: 'Inter', Arial, sans-serif;
   color: #283b35;
   background: #f6f7f4;
   font-synthesis: none;
@@ -176,6 +176,17 @@ textarea {
   resize: vertical;
 }
 
+input[name='user_id'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+input[name='user_id']::-webkit-inner-spin-button,
+input[name='user_id']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .filter-actions {
   display: flex;
   align-items: center;
@@ -217,18 +228,18 @@ table {
 }
 
 th {
-  background: #fafbf8;
-  font-size: 11px;
+  background: #fafafa;
+  font-size: 12px;
   font-weight: 500;
-  color: #829080;
-  padding: 13px 24px;
-  border-block: 1px solid #edf0e9;
+  color: #666;
+  padding: 12px 20px;
+  border-block: 1px solid #e5e5e5;
   white-space: nowrap;
 }
 
 td {
-  padding: 18px 24px;
-  border-bottom: 1px solid #edf0e9;
+  padding: 12px 20px;
+  border-bottom: 1px solid #e5e5e5;
   white-space: nowrap;
 }
 
@@ -237,53 +248,10 @@ tr:last-child td {
 }
 
 .spending-title {
-  font-weight: 600;
+  font-weight: 400;
   max-width: 300px;
   overflow-wrap: anywhere;
   white-space: normal;
-  margin-bottom: 7px;
-}
-
-.category {
-  display: inline-block;
-  background: #edf1e7;
-  color: #6d8055;
-  border-radius: 5px;
-  padding: 3px 8px;
-  font-size: 10px;
-}
-
-.transport {
-  background: #eaf0f8;
-  color: #56779b;
-}
-
-.entertainment {
-  background: #f2ecf8;
-  color: #8a71a0;
-}
-
-.health {
-  background: #f9ebeb;
-  color: #a57171;
-}
-
-.purchases {
-  background: #fbf0df;
-  color: #a58a55;
-}
-
-.member-avatar {
-  display: inline-grid;
-  place-items: center;
-  min-width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #eff2ec;
-  margin-right: 8px;
-  color: #7e8a77;
-  font-size: 10px;
-  padding: 4px;
 }
 
 .date {
@@ -306,7 +274,12 @@ tr:last-child td {
 }
 
 .row-actions button {
-  font-size: 11px;
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 13px;
 }
 
 .table-footer {

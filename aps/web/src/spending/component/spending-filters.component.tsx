@@ -1,26 +1,26 @@
-﻿import { useState } from "react";
-import type { FormEvent } from "react";
-import { categories } from "./spending.entity";
-import type { Category, SpendingFilters } from "./spending.entity";
+import { useState } from 'react';
+import type { FormEvent } from 'react';
+import { categories } from '../spending.entity';
+import type { Category, SpendingFilters } from '../spending.entity';
 
 interface SpendingFiltersFormProps {
   onApply: (filters: SpendingFilters) => void;
 }
 
-export function SpendingFiltersForm({ onApply }: SpendingFiltersFormProps) {
-  const [error, setError] = useState("");
+export const SpendingFiltersForm = ({ onApply }: SpendingFiltersFormProps) => {
+  const [error, setError] = useState('');
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const data = new FormData(event.currentTarget);
-    const userID = String(data.get("user_id") ?? "");
-    const category = String(data.get("category") ?? "");
-    const from = String(data.get("from") ?? "");
-    const to = String(data.get("to") ?? "");
+    const userID = String(data.get('user_id') ?? '');
+    const category = String(data.get('category') ?? '');
+    const from = String(data.get('from') ?? '');
+    const to = String(data.get('to') ?? '');
 
     if (from && to && from > to) {
-      setError("The start date must not be after the end date.");
+      setError('The start date must not be after the end date.');
       return;
     }
 
@@ -45,12 +45,12 @@ export function SpendingFiltersForm({ onApply }: SpendingFiltersFormProps) {
       filters.to = endDate.toISOString();
     }
 
-    setError("");
+    setError('');
     onApply(filters);
   }
 
   function handleReset() {
-    setError("");
+    setError('');
     onApply({});
   }
 
@@ -104,4 +104,4 @@ export function SpendingFiltersForm({ onApply }: SpendingFiltersFormProps) {
       )}
     </>
   );
-}
+};

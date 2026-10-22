@@ -1,27 +1,29 @@
-﻿import { useEffect, useRef, useState } from "react";
-import type { FormEvent, SyntheticEvent } from "react";
+import { useEffect, useRef, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faXmark } from '@fortawesome/free-solid-svg-icons';
+import type { FormEvent, SyntheticEvent } from 'react';
 import {
   categories,
   type SpendingEntity,
   type CreateSpendingDTO,
-} from "./spending.entity";
+} from '../spending.entity';
 
-function toLocalDateTime(value: Date) {
-  // datetime-local expects local time without a timezone suffix.
-  const local = new Date(value.getTime() - value.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 19);
-}
+import { toLocalDateTime } from '../spending.util';
 
-interface SpendingFormProps {
+interface SpendingModalProps {
   spending: SpendingEntity | null;
   onSave: (values: CreateSpendingDTO) => Promise<void>;
   onClose: () => void;
 }
 
-export function SpendingForm({ spending, onSave, onClose }: SpendingFormProps) {
+export const SpendingModal = ({
+  spending,
+  onSave,
+  onClose,
+}: SpendingModalProps) => {
   const dialog = useRef<HTMLDialogElement>(null);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   useEffect(() => {
     dialog.current?.showModal();
@@ -41,18 +43,18 @@ export function SpendingForm({ spending, onSave, onClose }: SpendingFormProps) {
     const data = new FormData(event.currentTarget);
 
     setSaving(true);
-    setError("");
+    setError('');
 
     try {
       await onSave({
-        user_id: spending?.user_id ?? Number(data.get("user_id")),
-        amount: Number(data.get("amount")),
-        category: data.get("category") as CreateSpendingDTO["category"],
-        spent_at: new Date(String(data.get("spent_at"))).toISOString(),
-        comment: String(data.get("comment") ?? "").trim(),
+        user_id: spending?.user_id ?? Number(data.get('user_id')),
+        amount: Number(data.get('amount')),
+        category: data.get('category') as CreateSpendingDTO['category'],
+        spent_at: new Date(String(data.get('spent_at'))).toISOString(),
+        comment: String(data.get('comment') ?? '').trim(),
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save spending.");
+      setError(err instanceof Error ? err.message : 'Could not save spending.');
     } finally {
       setSaving(false);
     }
@@ -63,7 +65,7 @@ export function SpendingForm({ spending, onSave, onClose }: SpendingFormProps) {
       <div className="modal-heading">
         <div>
           <p className="eyebrow">СЕМЕЙНЫЙ СЧЁТ</p>
-          <h2 id="form-title">{spending ? "Изменить трату" : "Новая трата"}</h2>
+          <h2 id="form-title">{spending ? 'Изменить трату' : 'Новая трата'}</h2>
         </div>
         <button
           className="text-button"
@@ -71,7 +73,7 @@ export function SpendingForm({ spending, onSave, onClose }: SpendingFormProps) {
           disabled={saving}
           onClick={onClose}
         >
-          ✕
+          <FontAwesomeIcon icon={faXmark} />
         </button>
       </div>
 
@@ -111,7 +113,7 @@ export function SpendingForm({ spending, onSave, onClose }: SpendingFormProps) {
               Категория
               <select
                 name="category"
-                defaultValue={spending?.category ?? "food"}
+                defaultValue={spending?.category ?? 'food'}
               >
                 {Object.entries(categories).map(([key, label]) => (
                   <option key={key} value={key}>
@@ -140,7 +142,7 @@ export function SpendingForm({ spending, onSave, onClose }: SpendingFormProps) {
             <textarea
               name="comment"
               rows={3}
-              defaultValue={spending?.comment ?? ""}
+              defaultValue={spending?.comment ?? ''}
               placeholder="На что потратили?"
             />
           </label>
@@ -157,10 +159,10 @@ export function SpendingForm({ spending, onSave, onClose }: SpendingFormProps) {
             Отмена
           </button>
           <button className="primary" disabled={saving}>
-            {saving ? "Сохраняем…" : "Сохранить"}
+            {saving ? 'Сохраняем…' : 'Сохранить'}
           </button>
         </div>
       </form>
     </dialog>
   );
-}
+};

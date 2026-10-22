@@ -1,6 +1,14 @@
-﻿import { categories } from "./spending.entity";
-import type { SpendingWithUsernameEntity } from "./spending.entity";
-import { rubleFormatter, dateFormatter } from "./spending.format";
+import { categories } from '../spending.entity';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faArrowLeft,
+  faArrowRight,
+  faPen,
+  faTrash,
+  faWallet,
+} from '@fortawesome/free-solid-svg-icons';
+import type { SpendingWithUsernameEntity } from '../spending.entity';
+import { rubleFormatter, dateFormatter } from '../spending.util';
 
 interface SpendingTableProps {
   spendings: SpendingWithUsernameEntity[];
@@ -13,7 +21,7 @@ interface SpendingTableProps {
   onPageChange: (offset: number) => void;
 }
 
-export function SpendingTable({
+export const SpendingTable = ({
   spendings,
   deletingID,
   offset,
@@ -22,11 +30,13 @@ export function SpendingTable({
   onEdit,
   onDelete,
   onPageChange,
-}: SpendingTableProps) {
+}: SpendingTableProps) => {
   if (spendings.length === 0) {
     return (
       <div className="empty">
-        <span className="empty-icon">₽</span>
+        <span className="empty-icon">
+          <FontAwesomeIcon icon={faWallet} />
+        </span>
         <h3>Здесь пока нет расходов</h3>
         <p>Добавьте первую трату или измените фильтры.</p>
       </div>
@@ -46,6 +56,7 @@ export function SpendingTable({
           <thead>
             <tr>
               <th>Трата</th>
+              <th>Категория</th>
               <th>Член семьи</th>
               <th>Дата</th>
               <th className="amount">Сумма</th>
@@ -56,21 +67,19 @@ export function SpendingTable({
           </thead>
 
           <tbody>
-            {spendings.map((spending) => (
+            {spendings.map(spending => (
               <tr key={spending.id}>
                 <td>
                   <div className="spending-title">
-                    {spending.comment || categories[spending.category]}
+                    {spending.comment || 'Без комментария'}
                   </div>
-                  <span className={`category ${spending.category}`}>
-                    {categories[spending.category] ?? spending.category}
-                  </span>
                 </td>
 
                 <td>
-                  <span className="member-avatar" aria-hidden="true">
-                    {spending.user_id}
-                  </span>
+                  {categories[spending.category] ?? spending.category}
+                </td>
+
+                <td>
                   {spending.username
                     ? `@${spending.username}`
                     : `Участник #${spending.user_id}`}
@@ -88,18 +97,21 @@ export function SpendingTable({
                   <div className="row-actions">
                     <button
                       className="text-button"
+                      aria-label={`Изменить трату #${spending.id}`}
+                      title="Изменить"
                       onClick={() => onEdit(spending)}
                     >
-                      Изменить
-                      <span className="sr-only"> трату #{spending.id}</span>
+                      <FontAwesomeIcon icon={faPen} />
                     </button>
                     <button
                       className="text-button danger"
+                      aria-label={`Удалить трату #${spending.id}`}
+                      title={deletingID === spending.id ? 'Удаляем…' : 'Удалить'}
+                      aria-busy={deletingID === spending.id}
                       disabled={deletingID !== null}
                       onClick={() => onDelete(spending)}
                     >
-                      {deletingID === spending.id ? "Удаляем…" : "Удалить"}
-                      <span className="sr-only"> трату #{spending.id}</span>
+                      <FontAwesomeIcon icon={faTrash} />
                     </button>
                   </div>
                 </td>
@@ -119,7 +131,7 @@ export function SpendingTable({
             onClick={() => onPageChange(offset - pageSize)}
             aria-label="Предыдущая страница"
           >
-            ←
+            <FontAwesomeIcon icon={faArrowLeft} />
           </button>
           <span>Страница {pageNumber}</span>
           <button
@@ -127,10 +139,10 @@ export function SpendingTable({
             onClick={() => onPageChange(offset + pageSize)}
             aria-label="Следующая страница"
           >
-            →
+            <FontAwesomeIcon icon={faArrowRight} />
           </button>
         </div>
       </div>
     </>
   );
-}
+};

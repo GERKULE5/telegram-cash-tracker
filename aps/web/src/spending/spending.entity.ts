@@ -1,11 +1,11 @@
 export const categories = {
-  food: "Еда",
-  transport: "Транспорт",
-  housing: "Жильё",
-  entertainment: "Развлечения",
-  health: "Здоровье",
-  purchases: "Покупки",
-  other: "Другое",
+  food: 'Еда',
+  transport: 'Транспорт',
+  housing: 'Жильё',
+  entertainment: 'Развлечения',
+  health: 'Здоровье',
+  purchases: 'Покупки',
+  other: 'Другое',
 };
 
 export type Category = keyof typeof categories;
